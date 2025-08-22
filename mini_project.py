@@ -4,7 +4,7 @@ from tkcalendar import DateEntry
 import json
 import os
 from datetime import datetime,timedelta   
-import pandas 
+import pandas as pd
 def clear_frame():
     for widget in window.winfo_children():
         widget.destroy()
@@ -145,60 +145,66 @@ def view_summary():
 
 def monthly_summary():
     clear_frame()
-    current_month = datetime.now().strftime("%Y-%m")
     filepath = "expenses.json"
     if os.path.exists(filepath):
-        with open(filepath,"r") as file :
+        with open(filepath,"r") as file:
             data = json.load(file)
     else:
         data = {}
-    if current_month in data:
-        total = sum(expense["amount"] for expense in data[current_month])
-    else:
-        total = 0
-    total_label = tk.Label(window, text=f"Total Spending This Month: ₹{total}", font=("Arial",14,"bold"), bg="#BFBFF9")
-    total_label.pack(pady=10)
+
+    months = list(data.keys())
+
+    label = tk.Label(window, text="Select Month:",
+                     font=("Arial",12,"bold"), bg="#BFBFF9", fg="#2C2C2C")
+    label.pack(pady=5)
+
+    selected_month = tk.StringVar()
+    month_dropdown = ttk.Combobox(window, values=months, width=27, textvariable=selected_month)
+    month_dropdown.pack(pady=5, ipady=5)
+    if months:
+        month_dropdown.set(months[-1])  # default: latest month
+
+    # category filter
     label2 = tk.Label(window, text="Select Category:",
                       font=("Arial",12,"bold"), bg="#BFBFF9", fg="#2C2C2C")
     label2.pack(pady=5)
 
     categories = [
-        "Food & Dining", "Groceries", "Transportation", "Fuel",
-        "Shopping", "Entertainment", "Health & Fitness", "Medical",
-        "Travel", "Education", "Bills & Utilities", "Rent",
-        "Savings & Investments", "Gifts & Donations",
-        "Personal Care", "Others"
+        "All Categories","Food & Dining","Groceries","Transportation","Fuel",
+        "Shopping","Entertainment","Health & Fitness","Medical",
+        "Travel","Education","Bills & Utilities","Rent",
+        "Savings & Investments","Gifts & Donations","Personal Care","Others"
     ]
 
     selected_category = tk.StringVar()
-    category_dropdown = ttk.Combobox(window, values=categories,
-                                     width=27, textvariable=selected_category)
+    category_dropdown = ttk.Combobox(window, values=categories, width=27, textvariable=selected_category)
     category_dropdown.pack(pady=5, ipady=5)
-    category_dropdown.set("Choose Category")
+    category_dropdown.set("All Categories")
 
-    # Function to calculate category total
-    def show_category_total():
+    # result label
+    result_label = tk.Label(window, text="", font=("Arial",14,"bold"), bg="#BFBFF9")
+    result_label.pack(pady=10)
+
+    def show_total():
+        month = selected_month.get()
         category = selected_category.get()
-        if current_month in data:
-            cat_total = sum(exp["amount"] for exp in data[current_month] if exp["category"] == category)
-        else:
-            cat_total = 0
-        result_label.config(text=f"Total spent on {category}: ₹{cat_total}")
+        total = 0
+        if month in data:
+            for expense in data[month]:
+                if category == "All Categories" or expense["category"] == category:
+                    total += expense["amount"]
+        result_label.config(text=f"Total Spending in {month} ({category}): ₹{total}")
 
-    # Button to check category spending
-    check_btn = tk.Button(window, text="Check Category Spending",
-                          command=show_category_total,
+    check_btn = tk.Button(window, text="Check Monthly Spending",
+                          command=show_total,
                           bg="#0A66C2", fg="white", font=("Arial",12,"bold"))
     check_btn.pack(pady=10)
 
-    # Label to display result
-    result_label = tk.Label(window, text="", font=("Arial",12,"bold"),
-                            bg="#BFBFF9", fg="#2C2C2C")
-    result_label.pack(pady=10)
     back_btn = tk.Button(window, text="⬅ Back", command=view_summary,
                          bg="#0A66C2", fg="white", font=("Arial",12,"bold"))
     back_btn.pack(pady=10)
-    
+
+
 def weekly_summary():
     clear_frame()
     # to calculate weekly expense
@@ -262,70 +268,66 @@ def weekly_summary():
 
 def yearly_summary():
     clear_frame()
-    # to calculate yearly expense
-    current_year = datetime.now().strftime("%Y")
     filepath = "expenses.json"
     if os.path.exists(filepath):
         with open(filepath,"r" ) as file :
             data = json.load(file)
     else:
         data = {}
-    current_year = datetime.now().strftime("%Y")
-    yearly_total = 0
-    for month_key, month_expenses in data.items():
-        if month_key.startswith(current_year):
-            yearly_total += sum(expense["amount"] for expense in month_expenses)
-    total_label = tk.Label(window, text=f"Total Spending This Year: ₹{yearly_total}", font=("Arial",14,"bold"), bg="#BFBFF9")
-    total_label.pack(pady=10)
-    back_btn = tk.Button(window, text="⬅ Back", command=view_summary,
-                         bg="#0A66C2", fg="white", font=("Arial",12,"bold"))
-    back_btn.pack(pady=10)
+
+    years = sorted({key[:4] for key in data.keys()})
+
+    label = tk.Label(window, text="Select Year:",
+                     font=("Arial",12,"bold"), bg="#BFBFF9", fg="#2C2C2C")
+    label.pack(pady=5)
+
+    selected_year = tk.StringVar()
+    year_dropdown = ttk.Combobox(window, values=years, width=27, textvariable=selected_year)
+    year_dropdown.pack(pady=5, ipady=5)
+    if years:
+        year_dropdown.set(years[-1])
+
+    # category filter
     label2 = tk.Label(window, text="Select Category:",
                       font=("Arial",12,"bold"), bg="#BFBFF9", fg="#2C2C2C")
     label2.pack(pady=5)
 
     categories = [
-        "Food & Dining", "Groceries", "Transportation", "Fuel",
-        "Shopping", "Entertainment", "Health & Fitness", "Medical",
-        "Travel", "Education", "Bills & Utilities", "Rent",
-        "Savings & Investments", "Gifts & Donations",
-        "Personal Care", "Others"
+        "All Categories","Food & Dining","Groceries","Transportation","Fuel",
+        "Shopping","Entertainment","Health & Fitness","Medical",
+        "Travel","Education","Bills & Utilities","Rent",
+        "Savings & Investments","Gifts & Donations","Personal Care","Others"
     ]
 
     selected_category = tk.StringVar()
-    category_dropdown = ttk.Combobox(window, values=categories,
-                                     width=27, textvariable=selected_category)
+    category_dropdown = ttk.Combobox(window, values=categories, width=27, textvariable=selected_category)
     category_dropdown.pack(pady=5, ipady=5)
-    category_dropdown.set("Choose Category")
+    category_dropdown.set("All Categories")
 
-    # Function to calculate category total for weekly range
-    def show_category_total():
-        category = selected_category.get()   # get category from dropdown
-        cat_total = 0
+    result_label = tk.Label(window, text="", font=("Arial",14,"bold"), bg="#BFBFF9")
+    result_label.pack(pady=10)
+
+    def show_total():
+        year = selected_year.get()
+        category = selected_category.get()
+        yearly_total = 0
         for month_key, month_expenses in data.items():
-            if month_key.startswith(current_year):  # check same year
+            if month_key.startswith(year):
                 for expense in month_expenses:
-                    if expense["category"] == category:  # filter category
-                        cat_total += expense["amount"]
+                    if category == "All Categories" or expense["category"] == category:
+                        yearly_total += expense["amount"]
+        result_label.config(text=f"Total Spending in {year} ({category}): ₹{yearly_total}")
 
-        result_label.config(
-            text=f"Total spent on {category} in {current_year}: ₹{cat_total}"
-        )
-
-    # Button to check category spending
-    check_btn = tk.Button(window, text="Check Category Spending",
-                          command=show_category_total,
+    check_btn = tk.Button(window, text="Check Yearly Spending",
+                          command=show_total,
                           bg="#0A66C2", fg="white", font=("Arial",12,"bold"))
     check_btn.pack(pady=10)
 
-    # Label to display result
-    result_label = tk.Label(window, text="", font=("Arial",12,"bold"),
-                            bg="#BFBFF9", fg="#2C2C2C")
-    result_label.pack(pady=10)
-    
     back_btn = tk.Button(window, text="⬅ Back", command=view_summary,
                          bg="#0A66C2", fg="white", font=("Arial",12,"bold"))
     back_btn.pack(pady=10)
+
+
 
 def delete_expense():
     clear_frame()
@@ -517,16 +519,48 @@ def edit_expense_cat(selected_date,selected_delete_cat,edited_expense):
 
 def expenses_list():
     clear_frame()
-    title = tk.Label(window, text="Expenses list",
-                     font=("Arial",18,"bold"),
+    title = tk.Label(window, text="Expenses List",
+                     font=("Arial", 18, "bold"),
                      bg="#BFBFF9", fg="#2C2C2C")
     title.pack(pady=20)
-    filepath ="expenses.json"
+
+    filepath = "expenses.json"
     if os.path.exists(filepath):
-        with open(filepath,"r") as file :
+        with open(filepath, "r") as file:
             data = json.load(file)
     else:
         data = {}
+
+    record = []
+    for month, expenses in data.items():
+        for expense in expenses:
+            expense["month"] = month
+            record.append(expense)
+
+    if record:  
+        df = pd.DataFrame(record)
+
+        # Create a Treeview
+        tree = ttk.Treeview(window, columns=list(df.columns), show="headings")
+        tree.pack(pady=10, fill="both", expand=True)
+
+        # Add column headers
+        for col in df.columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=120)
+
+        # Insert rows
+        for _, row in df.iterrows():
+            tree.insert("", "end", values=list(row))
+
+    else:
+        msg = tk.Label(window, text="No expenses recorded yet.",
+                       font=("Arial", 12),
+                       bg="#BFBFF9", fg="red")
+        msg.pack(pady=10)
+    back_btn = tk.Button(window, text="⬅ Back", command=mainmenu,
+                         bg="#0A66C2", fg="white", font=("Arial",12,"bold"))
+    back_btn.pack(pady=10)
     
 def mainmenu():
     clear_frame()
@@ -545,7 +579,7 @@ def mainmenu():
                      font=("Arial",12,"bold"), command=delete_expense)
     btn2.pack(pady=10)
 
-    btn3 = tk.Button(window, text="\u270E Edit Summary",
+    btn3 = tk.Button(window, text="\u270E Edit Expense",
                      width=20, height=2, bg="#0A66C2", fg="white",
                      font=("Arial",12,"bold"), command=edit_expense)
     btn3.pack(pady=10)
